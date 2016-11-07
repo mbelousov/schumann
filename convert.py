@@ -6,14 +6,13 @@ lowerBound = 24
 upperBound = 102
 
 
-def noteStateMatrixToMidi(statematrix, name="example"):
+def noteStateMatrixToMidi(statematrix, name="example", tickscale=20):
     statematrix = numpy.asarray(statematrix)
     pattern = midi.Pattern()
     track = midi.Track()
     pattern.append(track)
 
     span = upperBound - lowerBound
-    tickscale = 55
 
     lastcmdtime = 0
     prevstate = [[0, 0] for x in range(span)]
@@ -38,7 +37,7 @@ def noteStateMatrixToMidi(statematrix, name="example"):
             lastcmdtime = time
         for note in onNotes:
             track.append(midi.NoteOnEvent(tick=(time - lastcmdtime) * tickscale,
-                                          velocity=40, pitch=note + lowerBound))
+                                          velocity=85, pitch=note + lowerBound))
             lastcmdtime = time
 
         prevstate = state
@@ -48,7 +47,8 @@ def noteStateMatrixToMidi(statematrix, name="example"):
 
     midi.write_midifile("{}.mid".format(name), pattern)
 
-def midiToNoteStateMatrix(midifile):
+
+def midiToNoteStateMatrix(midifile, sample_rate=16):
     pattern = midi.read_midifile(midifile)
     timeleft = [track[0].tick for track in pattern]
     posns = [0 for track in pattern]
@@ -62,12 +62,14 @@ def midiToNoteStateMatrix(midifile):
     logging.info("Pattern resolution: %s" % pattern.resolution)
     logging.info("Timeleft: %s" % timeleft)
     while True:
-        if time % (pattern.resolution / 4) == (pattern.resolution / 8):
+        # print "TIME: {}".format(time)
+        if time % (pattern.resolution / sample_rate) == (pattern.resolution /
+                                                             (sample_rate * 2)):
             # Crossed a note boundary. Create a new state, defaulting to holding notes
             oldstate = state
             state = [[oldstate[x][0], 0] for x in range(span)]
             # logging.info("APPEND STATE %s" % state)
-            print "CROSSED"
+            # print "CROSSED"
             statematrix.append(state)
         for i in range(len(timeleft)):
             while timeleft[i] == 0:
@@ -132,13 +134,13 @@ if __name__ == '__main__':
             if pair != [0, 0]:
                 if pair == [1, 0]:
                     seq.append("%d (c)" % p_i)
-                    continue
-                seq.append(p_i)
+                else:
+                    seq.append(p_i)
             p_i += 1
         print "State %d: [%s]" % (s_i, " ".join([str(e) for e in seq]))
         s_i += 1
 
-    raw_input()
-    pprint(statematrix)
+    # raw_input()
+    # pprint(statematrix)
     noteStateMatrixToMidi(statematrix, "output")
     print "DONE"
