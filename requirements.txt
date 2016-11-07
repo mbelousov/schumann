@@ -1,0 +1,2 @@
+numpy==1.11.2
+python-midi==0.2.4
