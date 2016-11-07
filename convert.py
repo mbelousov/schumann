@@ -2,17 +2,25 @@ import midi, numpy
 import logging
 from pprint import pprint
 
-lowerBound = 24
-upperBound = 102
+lower_bound = 24
+upper_bound = 102
 
 
-def noteStateMatrixToMidi(statematrix, name="example", tickscale=20):
+def nsmatrxi2midi(statematrix, name="example", tickscale=20):
+    """
+    Converts NoteStateMatrix to MIDI File and saves it to the disk
+    :param statematrix: NoteStateMatrix
+    :param name: Name of the result file
+    :param tickscale: Tick scale (default 20)
+    :return:
+    """
+
     statematrix = numpy.asarray(statematrix)
     pattern = midi.Pattern()
     track = midi.Track()
     pattern.append(track)
 
-    span = upperBound - lowerBound
+    span = upper_bound - lower_bound
 
     lastcmdtime = 0
     prevstate = [[0, 0] for x in range(span)]
@@ -33,11 +41,11 @@ def noteStateMatrixToMidi(statematrix, name="example", tickscale=20):
         for note in offNotes:
             track.append(
                 midi.NoteOffEvent(tick=(time - lastcmdtime) * tickscale,
-                                  pitch=note + lowerBound))
+                                  pitch=note + lower_bound))
             lastcmdtime = time
         for note in onNotes:
             track.append(midi.NoteOnEvent(tick=(time - lastcmdtime) * tickscale,
-                                          velocity=85, pitch=note + lowerBound))
+                                          velocity=85, pitch=note + lower_bound))
             lastcmdtime = time
 
         prevstate = state
@@ -48,13 +56,19 @@ def noteStateMatrixToMidi(statematrix, name="example", tickscale=20):
     midi.write_midifile("{}.mid".format(name), pattern)
 
 
-def midiToNoteStateMatrix(midifile, sample_rate=16):
+def midi2nsmatrix(midifile, sample_rate=16):
+    """Converts MIDI file to NoteStateMatrix
+
+    :param midifile: Path to MIDI File
+    :param sample_rate: Sample rate (default 16)
+    :return: NoteStateMatrix
+    """
     pattern = midi.read_midifile(midifile)
     timeleft = [track[0].tick for track in pattern]
     posns = [0 for track in pattern]
 
     statematrix = []
-    span = upperBound - lowerBound
+    span = upper_bound - lower_bound
     time = 0
     logging.info("Span size: %d" % span)
     state = [[0, 0] for x in range(span)]
@@ -80,20 +94,20 @@ def midiToNoteStateMatrix(midifile, sample_rate=16):
                 evt = track[pos]
                 if isinstance(evt, midi.NoteEvent):
                     # logging.info("NOTE: %s" % evt)
-                    if (evt.pitch < lowerBound) or (evt.pitch >= upperBound):
+                    if (evt.pitch < lower_bound) or (evt.pitch >= upper_bound):
                         logging.warn("Ignoring note {} at time {}".format(
                             evt.pitch, time))
                         pass
                     else:
                         if isinstance(evt,
                                       midi.NoteOffEvent) or evt.velocity == 0:
-                            state[evt.pitch - lowerBound] = [0, 0]
+                            state[evt.pitch - lower_bound] = [0, 0]
                         else:
-                            print "Note {} at {} (velocity: {})".format(
+                            logging.info("Note {} at {} (velocity: {})".format(
                                 evt.pitch,
-                                (evt.pitch - lowerBound),
-                                evt.velocity)
-                            state[evt.pitch - lowerBound] = [1, 1]
+                                (evt.pitch - lower_bound),
+                                evt.velocity))
+                            state[evt.pitch - lower_bound] = [1, 1]
                 elif isinstance(evt, midi.TimeSignatureEvent):
                     logging.info("TIME SIGN: %s" % evt)
                     # if evt.numerator not in (2, 4):
@@ -112,7 +126,6 @@ def midiToNoteStateMatrix(midifile, sample_rate=16):
                 timeleft[i] -= 1
 
         if all(t is None for t in timeleft):
-            print "BREAK"
             break
 
         time += 1
@@ -121,9 +134,9 @@ def midiToNoteStateMatrix(midifile, sample_rate=16):
 
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.INFO)
-    statematrix = midiToNoteStateMatrix('music/mond_1.mid')
-    print "Result"
+    logging.basicConfig(level=logging.ERROR)
+    print "Reading file.."
+    statematrix = midi2nsmatrix('music/mond_1.mid')
     print "States: %d" % len(statematrix)
 
     s_i = 0
@@ -139,8 +152,6 @@ if __name__ == '__main__':
             p_i += 1
         print "State %d: [%s]" % (s_i, " ".join([str(e) for e in seq]))
         s_i += 1
-
-    # raw_input()
-    # pprint(statematrix)
-    noteStateMatrixToMidi(statematrix, "output")
+    print "Generating the output.."
+    nsmatrxi2midi(statematrix, "output")
     print "DONE"
