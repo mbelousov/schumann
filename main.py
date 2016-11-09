@@ -4,8 +4,5 @@ from train import loadMusicPieces
 if __name__ == '__main__':
     logging.basicConfig(level=logging.WARN)
 
-    pieces = loadMusicPieces('music')
+    pieces = loadMusicPieces('music', recursive=True)
     print("Loaded %d music pieces" % len(pieces))
-
-
-

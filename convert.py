@@ -45,7 +45,8 @@ def nsmatrxi2midi(statematrix, name="example", tickscale=20):
             lastcmdtime = time
         for note in onNotes:
             track.append(midi.NoteOnEvent(tick=(time - lastcmdtime) * tickscale,
-                                          velocity=85, pitch=note + lower_bound))
+                                          velocity=85,
+                                          pitch=note + lower_bound))
             lastcmdtime = time
 
         prevstate = state
@@ -136,7 +137,8 @@ def midi2nsmatrix(midifile, sample_rate=16):
 if __name__ == '__main__':
     logging.basicConfig(level=logging.ERROR)
     print "Reading file.."
-    statematrix = midi2nsmatrix('music/mond_1.mid')
+    statematrix = midi2nsmatrix('music/mozart_turkish_march.mid',
+                                sample_rate=16)
     print "States: %d" % len(statematrix)
 
     s_i = 0
@@ -154,4 +156,5 @@ if __name__ == '__main__':
         s_i += 1
     print "Generating the output.."
     nsmatrxi2midi(statematrix, "output")
+
     print "DONE"
