@@ -2,8 +2,9 @@ from convert import MIDIConverter, MidiCollection, MidiMatrix
 
 if __name__ == '__main__':
     sample_rate = 16
-    collection_name = 'music'
-
+    # collection_name = 'music'
+    collection_name = raw_input('Collection name: ')
+    sample_rate = int(raw_input('Sample rate: '))
     lower_bound = int(raw_input("Lower bound: "))
     upper_bound = int(raw_input("Upper bound: "))
     conv = MIDIConverter(lower_bound=lower_bound, upper_bound=upper_bound)
