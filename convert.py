@@ -111,11 +111,18 @@ class MidiCollection(JSONSerializable):
 
 
 
-class MidiMatrix(JSONSerializable):
+class MidiMatrixBase(JSONSerializable):
     upper_bound = 0
     lower_bound = 0
-    statematrix = []
     name = ''
+    def __init__(self, name, lower_bound, upper_bound):
+        self.name = name
+        self.lower_bound = lower_bound
+        self.upper_bound = upper_bound
+
+
+class MidiMatrix(MidiMatrixBase):
+    statematrix = []
 
     def __init__(self, name, lower_bound, upper_bound, statematrix=None):
         self.name = name
@@ -131,6 +138,29 @@ class MidiMatrix(JSONSerializable):
     @property
     def num_states(self):
         return len(self.statematrix)
+
+class DurationMidiMatrix(MidiMatrixBase):
+    durationmatrix = []
+    midimatrix = []
+    def __init__(self, midimatrix):
+        acc = [0 for i in midimatrix.statematrix[0]]
+        self.durationmatrix = [[0 for j in midimatrix.statematrix[i]] for i in midimatrix.statematrix]
+        for i in xrange(len(midimatrix.statematrix),0,-1):
+            state = midimatrix.statematrix[i]
+            for j in xrange(0,len(state)):
+                if state[j][0]== 0:
+                    continue
+                if state[j][1]== 0:
+                    acc[j]=acc[j]+1
+                else:
+                    acc[j] = acc[j] + 1
+                    self.durationmatrix[i][j]=acc[j]
+                    acc[j]=0
+        self.name = midimatrix.name
+        self.lower_bound = midimatrix.lower_bound
+        self.upper_bound = midimatrix.upper_bound
+        self.midimatrix = midimatrix
+
 
 
 class MIDIConverter(object):
@@ -261,6 +291,7 @@ class MIDIConverter(object):
 
         return MidiMatrix(fname, self.lower_bound, self.upper_bound,
                           statematrix=statematrix)
+
 
 
 if __name__ == '__main__':
