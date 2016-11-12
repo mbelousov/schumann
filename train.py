@@ -53,37 +53,51 @@ def unnormalise(x, upper):
 
 def generateMelody(model, startSequence, addLength):
     completeSequence = startSequence
-    length = len(startSequence)
+    for n in range(len(startSequence)):
+        model.predict(np.array([startSequence[n]]))
+
     for n in range(addLength):
-        lastElems = completeSequence[-length:]
+        lastElems = completeSequence[-1]
         prediction = model.predict(np.array([lastElems]))
-        completeSequence.append(prediction[0].tolist())
+        completeSequence.append(prediction.tolist())
     return completeSequence
 
 
 if __name__ == '__main__':
-    collection_file = raw_input("Collection file: ")
+    default_collection_file = 'music_8_21-108.bin'
+    collection_file = raw_input(
+        "Collection file[%s]: " % default_collection_file)
+    if collection_file == "":
+        collection_file = default_collection_file
     nb_epochs = int(raw_input("Number of epochs: "))
-    batch_size = int(raw_input("Batch size: "))
+    # batch_size = int(raw_input("Batch size: "))
     num_nodes = int(raw_input("Number of nodes: "))
     collection = LazyMidiCollection(collection_file)
-    context_length = collection.sample_rate * 4 * 2
-    print "Context: %d" % context_length
+    # context_length = collection.sample_rate * 4 * 2
+    start_sequence_length = collection.sample_rate * 4 * 2
+    context_length = 1
+    batch_size = 1
+    # print "Context: %d" % context_length
 
     X = []
     y = []
+    pieces_idx = []
     for piece in collection.iterpieces():
         durMat = DurationMidiMatrix.from_midimatrix(piece)
         trainData = TrainData(durMat, context_length=context_length, step=1)
         X.extend(trainData.x)
         y.extend(trainData.y)
-    u_startSequence = X[0]
+        pieces_idx.append(len(y))
     X, y, norm_upper = normalise(X, y)
 
-    startSequence = X[0]
+    print np.array(X).shape
+    startSequence = X[:start_sequence_length]
+    print np.array(startSequence).shape
+    nStartSeq = [x[0] for x in startSequence]
     m = DurationMidiMatrix('start', lower_bound=collection.lower_bound,
                            upper_bound=collection.upper_bound,
-                           duration_matrix=unnormalise(startSequence, norm_upper))
+                           duration_matrix=unnormalise(nStartSeq,
+                                                       norm_upper))
 
     m.to_midi('start.mid')
 
@@ -94,7 +108,8 @@ if __name__ == '__main__':
     print("Num examples: %d" % n_examples)
     print('Build model...')
     model = Sequential()
-    model.add(GRU(num_nodes, input_shape=input_shape))
+    model.add(GRU(num_nodes, batch_input_shape=(1, l_subsequence, n_notes),
+                  stateful=True))
     model.add(Dense(n_notes))
     model.add(Activation('tanh'))
 
@@ -103,13 +118,22 @@ if __name__ == '__main__':
 
     # for i in range(100):
     #
-    model.fit(X, y, batch_size=batch_size, nb_epoch=nb_epochs, verbose=2)
+    for epoch in xrange(nb_epochs):
+        old_idx = 0
+        for idx in pieces_idx:
+            model.fit(X[old_idx:idx], y[old_idx:idx], batch_size=batch_size,
+                      nb_epoch=1,
+                      shuffle=False,
+                      verbose=2)
+            old_idx = idx
+        model.save_weights('weights/model_weights_%d.h5' % epoch + 1)
+
     model.save_weights('weights/model_weights.h5')
 
-    melody = generateMelody(model, startSequence, 16 * context_length)
-
+    melody = generateMelody(model, startSequence, 2 * start_sequence_length)
+    nMelody = [x[0] for x in melody]
     m = DurationMidiMatrix('output', lower_bound=collection.lower_bound,
                            upper_bound=collection.upper_bound,
-                           duration_matrix=unnormalise(melody, norm_upper))
+                           duration_matrix=unnormalise(nMelody, norm_upper))
 
     m.to_midi('output.mid')
