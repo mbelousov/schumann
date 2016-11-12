@@ -126,7 +126,7 @@ if __name__ == '__main__':
                       shuffle=False,
                       verbose=2)
             old_idx = idx
-        model.save_weights('weights/model_weights_%d.h5' % epoch + 1)
+        model.save_weights('weights/model_weights_%d.h5' % (epoch + 1))
 
     model.save_weights('weights/model_weights.h5')
 
