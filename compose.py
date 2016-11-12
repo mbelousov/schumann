@@ -8,7 +8,9 @@ from convert import LazyMidiCollection, DurationMidiMatrix
 
 from train import TrainData, normalise, unnormalise, generateMelody
 if __name__ == '__main__':
-    collection = LazyMidiCollection('music_16_21-108.bin')
+    collection_file = raw_input("Collection file: ")
+    num_nodes = int(raw_input("Number of nodes: "))
+    collection = LazyMidiCollection(collection_file)
     context_length = collection.sample_rate * 4 * 2
     print "Context: %d" % context_length
 
@@ -27,7 +29,7 @@ if __name__ == '__main__':
     input_shape = (l_subsequence, n_notes)
 
     model = Sequential()
-    model.add(GRU(10, input_shape=input_shape))
+    model.add(GRU(num_nodes, input_shape=input_shape))
     model.add(Dense(n_notes))
     model.add(Activation('tanh'))
 
@@ -37,6 +39,22 @@ if __name__ == '__main__':
     model.load_weights('weights/model_weights.h5')
     startSequence = X[0]
     melody = generateMelody(model, startSequence, 16 * context_length)
+    startSequence = X[0]
+    m = DurationMidiMatrix('start', lower_bound=collection.lower_bound,
+                           upper_bound=collection.upper_bound,
+                           duration_matrix=unnormalise(startSequence,
+                                                       norm_upper))
+
+    m.to_midi('start.mid')
+
+    melody = generateMelody(model, startSequence, 16 * context_length)
+
+    m = DurationMidiMatrix('output', lower_bound=collection.lower_bound,
+                           upper_bound=collection.upper_bound,
+                           duration_matrix=unnormalise(melody, norm_upper))
+
+    m.to_midi('output.mid')
+
     for state in melody:
         print state
         raw_input()
