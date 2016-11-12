@@ -65,7 +65,7 @@ if __name__ == '__main__':
     collection_file = raw_input("Collection file: ")
     nb_epochs = int(raw_input("Number of epochs: "))
     batch_size = int(raw_input("Batch size: "))
-
+    num_nodes = int(raw_input("Number of nodes: "))
     collection = LazyMidiCollection(collection_file)
     context_length = collection.sample_rate * 4 * 2
     print "Context: %d" % context_length
@@ -86,7 +86,7 @@ if __name__ == '__main__':
     print("Num examples: %d" % n_examples)
     print('Build model...')
     model = Sequential()
-    model.add(GRU(10, input_shape=input_shape))
+    model.add(GRU(num_nodes, input_shape=input_shape))
     model.add(Dense(n_notes))
     model.add(Activation('tanh'))
 
