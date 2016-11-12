@@ -77,8 +77,16 @@ if __name__ == '__main__':
         trainData = TrainData(durMat, context_length=context_length, step=1)
         X.extend(trainData.x)
         y.extend(trainData.y)
-
+    u_startSequence = X[0]
     X, y, norm_upper = normalise(X, y)
+
+    startSequence = X[0]
+    m = DurationMidiMatrix('start', lower_bound=collection.lower_bound,
+                           upper_bound=collection.upper_bound,
+                           duration_matrix=unnormalise(startSequence, norm_upper))
+
+    m.to_midi('start.mid')
+
     n_notes = collection.upper_bound - collection.lower_bound + 1
     l_subsequence = context_length
     n_examples = len(y)
@@ -97,13 +105,6 @@ if __name__ == '__main__':
     #
     model.fit(X, y, batch_size=batch_size, nb_epoch=nb_epochs, verbose=2)
     model.save_weights('weights/model_weights.h5')
-    startSequence = X[0]
-    m = DurationMidiMatrix('start', lower_bound=collection.lower_bound,
-                           upper_bound=collection.upper_bound,
-                           duration_matrix=unnormalise(startSequence,
-                                                       norm_upper))
-
-    m.to_midi('start.mid')
 
     melody = generateMelody(model, startSequence, 16 * context_length)
 

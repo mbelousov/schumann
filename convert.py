@@ -191,11 +191,6 @@ class MidiMatrix(MidiMatrixBase):
         matrix = duration_matrix.duration_matrix
         state_matrix = [[[0, 0] for j in xrange(len(matrix[i]))] for i in \
                         xrange(len(matrix))]
-        print len(state_matrix)
-        print len(matrix)
-        print len(state_matrix[0])
-        print len(matrix[0])
-
         for i in xrange(len(matrix)):
             state = matrix[i]
             for j in xrange(len(state)):
@@ -203,7 +198,8 @@ class MidiMatrix(MidiMatrixBase):
                     continue
                 state_matrix[i][j] = [1, 1]
                 for k in xrange(1, state[j]):
-                    state_matrix[i + k][j] = [1, 0]
+                    idx = min(i + k, len(state_matrix) - 1)
+                    state_matrix[idx][j] = [1, 0]
         return MidiMatrix(duration_matrix.name,
                           duration_matrix.lower_bound,
                           duration_matrix.upper_bound,
