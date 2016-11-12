@@ -62,8 +62,11 @@ def generateMelody(model, startSequence, addLength):
 
 
 if __name__ == '__main__':
+    collection_file = raw_input("Collection file: ")
+    nb_epochs = int(raw_input("Number of epochs: "))
+    batch_size = int(raw_input("Batch size: "))
 
-    collection = LazyMidiCollection('music_16_21-108.bin')
+    collection = LazyMidiCollection(collection_file)
     context_length = collection.sample_rate * 4 * 2
     print "Context: %d" % context_length
 
@@ -92,7 +95,7 @@ if __name__ == '__main__':
 
     # for i in range(100):
     #
-    model.fit(X, y, batch_size=10, nb_epoch=10, verbose=2)
+    model.fit(X, y, batch_size=batch_size, nb_epoch=nb_epochs, verbose=2)
     model.save_weights('weights/model_weights.h5')
     startSequence = X[0]
     m = DurationMidiMatrix('start', lower_bound=collection.lower_bound,
