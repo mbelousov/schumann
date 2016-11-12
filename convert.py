@@ -144,8 +144,8 @@ class DurationMidiMatrix(MidiMatrixBase):
     midimatrix = []
     def __init__(self, midimatrix):
         acc = [0 for i in midimatrix.statematrix[0]]
-        self.durationmatrix = [[0 for j in midimatrix.statematrix[i]] for i in midimatrix.statematrix]
-        for i in xrange(len(midimatrix.statematrix),0,-1):
+        self.durationmatrix = [[0 for j in xrange(len(midimatrix.statematrix[i]))] for i in xrange(len(midimatrix.statematrix))]
+        for i in xrange(len(midimatrix.statematrix)-1,0,-1):
             state = midimatrix.statematrix[i]
             for j in xrange(0,len(state)):
                 if state[j][0]== 0:

@@ -4,7 +4,7 @@ class TrainData(object):
     y = []
     def __init__(self,durationMatrix,context_length,step=1):
         curr = 0
-        for i in xrange(0,len(durationMatrix.durationmatrix),step):
+        for i in xrange(0,len(durationMatrix.durationmatrix)-context_length,step):
             context = []
             for j in xrange(0,context_length):
                 context.append(durationMatrix.durationmatrix[i+j])
