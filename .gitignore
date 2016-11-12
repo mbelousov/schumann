@@ -1,8 +1,10 @@
 .ipynb_checkpoints/
 models/
+weights/
 music/
 music-db/
 output/
+start.mid
 output.mid
 # Byte-compiled / optimized / DLL files
 __pycache__/

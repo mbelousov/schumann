@@ -20,7 +20,8 @@ class LazyMidiCollection(object):
     def __read_header(self):
         fp = self.__open_model_file()
         line = fp.next().strip()
-        lower_bound, upper_bound, num_instances = line.split()
+        sample_rate, lower_bound, upper_bound, num_instances = line.split()
+        self.sample_rate = int(sample_rate)
         self.lower_bound = int(lower_bound)
         self.upper_bound = int(upper_bound)
         self.num_instances = int(num_instances)
@@ -240,11 +241,9 @@ class DurationMidiMatrix(MidiMatrixBase):
                                   midimatrix.upper_bound,
                                   duration_matrix)
 
-        #
-        # def to_midi(self, output_file):
-        #     conv = MIDIConverter(lower_bound=self.lower_bound,
-        #                          upper_bound=self.upper_bound)
-        #     conv.nsmatrix2midi(self.midimatrix.statematrix, output_file)
+    def to_midi(self, output_file):
+        midimatrix = MidiMatrix.from_duration_matrix(self)
+        return midimatrix.to_midi(output_file)
 
 
 class MIDIConverter(object):
@@ -261,13 +260,15 @@ class MIDIConverter(object):
         return content
 
     def directory2bin(self, dirpath,
-                      output_file):
+                      output_file, sample_rate=16):
         """Loads all midi files into dictionary of state-matrices
         """
         files = scan_midifiles(dirpath)
         fp = open(output_file, 'w')
-        fp.write("%d %d %d\n" % (self.lower_bound, self.upper_bound,
-                                 len(files)))
+        fp.write("%d %d %d %d\n" % (sample_rate,
+                                    self.lower_bound,
+                                    self.upper_bound,
+                                    len(files)))
 
         # batch_width = 10  # number of sequences in a batch
         # batch_len = 16 * 8  # length of each sequence
@@ -276,7 +277,7 @@ class MIDIConverter(object):
             fname = fpath.split('/')[-1]
             name = fname[:-4]
 
-            midimatrix = self.midi2nsmatrix(fpath)
+            midimatrix = self.midi2nsmatrix(fpath, sample_rate=sample_rate)
 
             if midimatrix is None:
                 continue

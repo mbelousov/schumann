@@ -5,7 +5,7 @@ from train import TrainData
 if __name__ == '__main__':
     logging.basicConfig(level=logging.WARN)
     target = open("output/training.txt", 'w')
-    collection = LazyMidiCollection('music_21-108.bin')
+    collection = LazyMidiCollection('music_16_21-108.bin')
     for piece in collection.iterpieces():
         durMat = DurationMidiMatrix.from_midimatrix(piece)
         trainData = TrainData(durMat, context_length=10, step=1)
