@@ -2,6 +2,7 @@
 models/
 music/
 music-db/
+output/
 output.mid
 # Byte-compiled / optimized / DLL files
 __pycache__/

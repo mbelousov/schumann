@@ -1,27 +1,30 @@
-from convert import MidiCollection
+from convert import LazyMidiCollection, MidiMatrix
 from collections import Counter
 from operator import itemgetter
 import matplotlib.pyplot as plt
 import seaborn as sns
 from pprint import pprint
+import os
+import json
 
 if __name__ == '__main__':
-    collection = MidiCollection.load_model('music_24-102.json')
-
-    print("Loaded %d music pieces" % collection.num_pieces)
-
+    print "Reading.."
     x = []
-    for piece in collection.pieces:
-        for state in piece.statematrix:
+    collection = LazyMidiCollection('music_21-108.bin')
+    for midimatrix in collection.iterpieces():
+        for state in midimatrix.statematrix:
             for j in xrange(len(state)):
                 if state[j][0] == 1:
-                    x.append(j)
+                    x.append(j + collection.lower_bound)
 
     loc_lower_bound = min(x)
     loc_upper_bound = max(x)
-    print "Lower bound: %d, upper bound: %d" % (
+
+    print "Local lower bound: %d, Local upper bound: %d" % (
         loc_lower_bound, loc_upper_bound)
-    bins = range(collection.lower_bound, collection.upper_bound + 1)
+
+    bins = range(collection.lower_bound,
+                 collection.upper_bound + 1)
     sns.distplot(x,
                  hist=bins)
     c = Counter(x)

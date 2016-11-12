@@ -3,17 +3,54 @@ import numpy as np
 import logging
 import os
 from pprint import pprint
-from utils import timeit, object_load, object_dump
+from utils import timeit, scan_midifiles
 import json
 
 
-class JSONSerializable(object):
+class Serializable(object):
     def to_json(self):
-        return json.dumps(self, default=lambda o: o.__dict__,
-                          )
+        return json.dumps(self, default=lambda o: o.__dict__, )
 
 
-class MidiCollection(JSONSerializable):
+class LazyMidiCollection(object):
+    def __init__(self, model_name):
+        self.model_name = model_name
+        self.__read_header()
+
+    def __read_header(self):
+        fp = self.__open_model_file()
+        line = fp.next().strip()
+        lower_bound, upper_bound, num_instances = line.split()
+        self.lower_bound = int(lower_bound)
+        self.upper_bound = int(upper_bound)
+        self.num_instances = int(num_instances)
+        fp.close()
+
+    def __open_model_file(self):
+        base_path = os.path.dirname(os.path.realpath(__file__))
+        dirpath = os.path.join(base_path, 'models')
+        model_path = os.path.join(dirpath, self.model_name)
+        return open(model_path, 'r')
+
+    def iterpieces(self):
+        with self.__open_model_file() as f:
+            i = 0
+            for line in f:
+                i += 1
+                if i % 10 == 0:
+                    print i
+                line = line.strip()
+                if i == 1:
+                    lower_bound, upper_bound, num_instances = line.split()
+                    lower_bound = int(lower_bound)
+                    upper_bound = int(upper_bound)
+                    num_instances = int(num_instances)
+                    continue
+                midimatrix = MidiMatrix.from_bin(line, lower_bound, upper_bound)
+                yield midimatrix
+
+
+class MidiCollection(Serializable):
     name = None
     pieces = None
 
@@ -33,7 +70,8 @@ class MidiCollection(JSONSerializable):
 
     @staticmethod
     def from_directory(dirpath, lower_bound, upper_bound):
-        collection = MidiCollection(dirpath, lower_bound, upper_bound)
+        collection = MidiCollection(dirpath.replace('/', '_'),
+                                    lower_bound, upper_bound)
         pieces = MidiCollection.__load_pieces_from_dir(dirpath,
                                                        lower_bound,
                                                        upper_bound,
@@ -110,11 +148,11 @@ class MidiCollection(JSONSerializable):
         return collection
 
 
-
-class MidiMatrixBase(JSONSerializable):
+class MidiMatrixBase(Serializable):
     upper_bound = 0
     lower_bound = 0
     name = ''
+
     def __init__(self, name, lower_bound, upper_bound):
         self.name = name
         self.lower_bound = lower_bound
@@ -135,38 +173,90 @@ class MidiMatrix(MidiMatrixBase):
                              upper_bound=self.upper_bound)
         conv.nsmatrix2midi(self.statematrix, output_file)
 
+    @staticmethod
+    def from_bin(content, lower_bound, upper_bound):
+        name, num_states, line = content.split('|')
+        num_states = int(num_states)
+        num_notes = upper_bound - lower_bound + 1
+        states = []
+        c = 0
+        for i in xrange(num_states):
+            state = []
+            for j in xrange(num_notes):
+                note = [int(line[c]), int(line[c + 1])]
+                state.append(note)
+                c += 2
+            states.append(state)
+        return MidiMatrix(name, lower_bound, upper_bound, states)
+
     @property
     def num_states(self):
         return len(self.statematrix)
 
+
 class DurationMidiMatrix(MidiMatrixBase):
     durationmatrix = []
     midimatrix = []
+
     def __init__(self, midimatrix):
         acc = [0 for i in midimatrix.statematrix[0]]
-        self.durationmatrix = [[0 for j in xrange(len(midimatrix.statematrix[i]))] for i in xrange(len(midimatrix.statematrix))]
-        for i in xrange(len(midimatrix.statematrix)-1,0,-1):
+        self.durationmatrix = [
+            [0 for j in xrange(len(midimatrix.statematrix[i]))] for i in
+            xrange(len(midimatrix.statematrix))]
+        for i in xrange(len(midimatrix.statematrix) - 1, 0, -1):
             state = midimatrix.statematrix[i]
-            for j in xrange(0,len(state)):
-                if state[j][0]== 0:
+            for j in xrange(0, len(state)):
+                if state[j][0] == 0:
                     continue
-                if state[j][1]== 0:
-                    acc[j]=acc[j]+1
+                if state[j][1] == 0:
+                    acc[j] = acc[j] + 1
                 else:
                     acc[j] = acc[j] + 1
-                    self.durationmatrix[i][j]=acc[j]
-                    acc[j]=0
+                    self.durationmatrix[i][j] = acc[j]
+                    acc[j] = 0
         self.name = midimatrix.name
         self.lower_bound = midimatrix.lower_bound
         self.upper_bound = midimatrix.upper_bound
         self.midimatrix = midimatrix
 
 
-
 class MIDIConverter(object):
     def __init__(self, lower_bound=24, upper_bound=102):
         self.lower_bound = lower_bound
         self.upper_bound = upper_bound
+
+    def midimatrix2bin(self, midimatrix):
+        content = "%s|%s|" % (midimatrix.name, midimatrix.num_states)
+        for state in midimatrix.statematrix:
+            for notes in state:
+                content += ("".join([str(n) for n in notes]))
+        content += "\n"
+        return content
+
+    def directory2bin(self, dirpath,
+                      output_file):
+        """Loads all midi files into dictionary of state-matrices
+        """
+        files = scan_midifiles(dirpath)
+        fp = open(output_file, 'w')
+        fp.write("%d %d %d\n" % (self.lower_bound, self.upper_bound,
+                                 len(files)))
+
+        # batch_width = 10  # number of sequences in a batch
+        # batch_len = 16 * 8  # length of each sequence
+        # division_len = 16  # interval between possible start locations
+        for fpath in files:
+            fname = fpath.split('/')[-1]
+            name = fname[:-4]
+
+            midimatrix = self.midi2nsmatrix(fpath)
+
+            if midimatrix is None:
+                continue
+            fp.write(self.midimatrix2bin(midimatrix))
+            print "Loaded {}".format(name)
+
+        return
 
     def nsmatrix2midi(self, statematrix, output_file, tickscale=20,
                       velocity=85):
@@ -178,7 +268,7 @@ class MIDIConverter(object):
         track = midi.Track()
         pattern.append(track)
 
-        span = self.upper_bound - self.lower_bound
+        span = self.upper_bound - self.lower_bound + 1
 
         lastcmdtime = 0
         prevstate = [[0, 0] for x in range(span)]
@@ -229,7 +319,7 @@ class MIDIConverter(object):
         timeleft = [track[0].tick for track in pattern]
         posns = [0 for track in pattern]
 
-        span = self.upper_bound - self.lower_bound
+        span = self.upper_bound - self.lower_bound + 1
         time = 0
         logging.info("Span size: %d" % span)
         state = [[0, 0] for x in range(span)]
@@ -291,7 +381,6 @@ class MIDIConverter(object):
 
         return MidiMatrix(fname, self.lower_bound, self.upper_bound,
                           statematrix=statematrix)
-
 
 
 if __name__ == '__main__':

@@ -1,6 +1,6 @@
 import time
 import logging
-import msgpack
+import os
 
 
 def timeit(method):
@@ -16,12 +16,23 @@ def timeit(method):
     return timed
 
 
-def object_dump(obj, fpath):
-    data = msgpack.packb(obj)
-    with open(fpath, 'wb') as f:
-        f.write(data)
+def scan_midifiles(dirpath, recursive=True, prefix=""):
+    files = []
+    if not os.path.isdir(dirpath):
+        base_path = os.path.dirname(os.path.realpath(__file__))
+        dirpath = os.path.join(base_path, dirpath)
+    for fname in os.listdir(dirpath):
+        full_path = os.path.join(dirpath, fname)
+        if recursive and os.path.isdir(full_path):
+            dir_prefix = os.path.relpath(full_path,
+                                         os.path.dirname(full_path))
+            if prefix:
+                dir_prefix = prefix + "_" + dir_prefix
+            local_files = scan_midifiles(full_path,
+                                         recursive=True,
+                                         prefix=dir_prefix)
+            files.extend(local_files)
 
-
-def object_load(fpath):
-    with open(fpath, 'rb') as f:
-        return msgpack.unpack(f)
+        if fname.lower().endswith('.mid'):
+            files.append(os.path.join(dirpath, fname))
+    return files
