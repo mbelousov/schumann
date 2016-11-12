@@ -38,15 +38,13 @@ class LazyMidiCollection(object):
             for line in f:
                 i += 1
                 if i % 10 == 0:
-                    print i
+                    logging.info("%d lines processed" % i)
                 line = line.strip()
                 if i == 1:
-                    lower_bound, upper_bound, num_instances = line.split()
-                    lower_bound = int(lower_bound)
-                    upper_bound = int(upper_bound)
-                    num_instances = int(num_instances)
+                    # skip the header
                     continue
-                midimatrix = MidiMatrix.from_bin(line, lower_bound, upper_bound)
+                midimatrix = MidiMatrix.from_bin(line, self.lower_bound,
+                                                 self.upper_bound)
                 yield midimatrix
 
 
@@ -163,9 +161,7 @@ class MidiMatrix(MidiMatrixBase):
     statematrix = []
 
     def __init__(self, name, lower_bound, upper_bound, statematrix=None):
-        self.name = name
-        self.lower_bound = lower_bound
-        self.upper_bound = upper_bound
+        super(MidiMatrix, self).__init__(name, lower_bound, upper_bound)
         self.statematrix = statematrix
 
     def to_midi(self, output_file):
@@ -189,18 +185,43 @@ class MidiMatrix(MidiMatrixBase):
             states.append(state)
         return MidiMatrix(name, lower_bound, upper_bound, states)
 
+    @staticmethod
+    def from_duration_matrix(duration_matrix):
+        matrix = duration_matrix.duration_matrix
+        state_matrix = [[[0, 0] for j in xrange(len(matrix[i]))] for i in \
+                        xrange(len(matrix))]
+        for i in xrange(len(matrix)):
+            state = matrix[i]
+            for j in xrange(len(state)):
+                if state[j] == 0:
+                    continue
+                state_matrix[i][j] = [1, 1]
+                for k in xrange(1, state[j]):
+                    state_matrix[i + k][j] = [1, 0]
+        return MidiMatrix(duration_matrix.name,
+                          duration_matrix.lower_bound,
+                          duration_matrix.upper_bound,
+                          state_matrix)
+
     @property
     def num_states(self):
         return len(self.statematrix)
 
 
 class DurationMidiMatrix(MidiMatrixBase):
-    durationmatrix = []
+    duration_matrix = []
     midimatrix = []
 
-    def __init__(self, midimatrix):
+    def __init__(self, name, lower_bound, upper_bound, duration_matrix=None):
+        super(DurationMidiMatrix, self).__init__(name,
+                                                 lower_bound,
+                                                 upper_bound)
+        self.duration_matrix = duration_matrix
+
+    @staticmethod
+    def from_midimatrix(midimatrix):
         acc = [0 for i in midimatrix.statematrix[0]]
-        self.durationmatrix = [
+        duration_matrix = [
             [0 for j in xrange(len(midimatrix.statematrix[i]))] for i in
             xrange(len(midimatrix.statematrix))]
         for i in xrange(len(midimatrix.statematrix) - 1, 0, -1):
@@ -209,15 +230,21 @@ class DurationMidiMatrix(MidiMatrixBase):
                 if state[j][0] == 0:
                     continue
                 if state[j][1] == 0:
-                    acc[j] = acc[j] + 1
+                    acc[j] += 1
                 else:
-                    acc[j] = acc[j] + 1
-                    self.durationmatrix[i][j] = acc[j]
+                    acc[j] += 1
+                    duration_matrix[i][j] = acc[j]
                     acc[j] = 0
-        self.name = midimatrix.name
-        self.lower_bound = midimatrix.lower_bound
-        self.upper_bound = midimatrix.upper_bound
-        self.midimatrix = midimatrix
+        return DurationMidiMatrix(midimatrix.name,
+                                  midimatrix.lower_bound,
+                                  midimatrix.upper_bound,
+                                  duration_matrix)
+
+        #
+        # def to_midi(self, output_file):
+        #     conv = MIDIConverter(lower_bound=self.lower_bound,
+        #                          upper_bound=self.upper_bound)
+        #     conv.nsmatrix2midi(self.midimatrix.statematrix, output_file)
 
 
 class MIDIConverter(object):
