@@ -89,9 +89,7 @@ if __name__ == '__main__':
         collection_file = default_collection_file
     num_nodes = int(raw_input("Number of nodes: "))
     weight_file = raw_input("Weight file: ")
-    nb_epochs = 0
-    if weight_file == "":
-        nb_epochs = int(raw_input("Number of epochs: "))
+    nb_epochs = int(raw_input("Number of epochs: "))
     # batch_size = int(raw_input("Batch size: "))
     collection = LazyMidiCollection(collection_file)
     # context_length = collection.sample_rate * 4 * 2
