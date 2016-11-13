@@ -198,6 +198,9 @@ if __name__ == '__main__':
             # print "%.5f => %d" % (nMelody[i][j], signal)
             if signal == 1:
                 nMelody[i][j] = [signal, 1]
+                if i - 1 >= 0:
+                    if nMelody[i - 1][j][0] == 1:
+                        nMelody[i][j] = [signal, 0]
             else:
                 nMelody[i][j] = [signal, 0]
 
