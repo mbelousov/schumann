@@ -75,8 +75,8 @@ def generateMelody(model, startSequence, addLength):
         lastElems = completeSequence[-length:]
         prediction = model.predict(np.array([lastElems]))
         melody = prediction.tolist()
-        print melody[0]
-        completeSequence.append([int(round(m)) for m in melody[0]])
+        # print melody[0]
+        completeSequence.append([1 if m > 0 else 0 for m in melody[0]])
         # completeSequence.append(prediction[0].tolist())
 
 # def generateMelody(model, startSequence, addLength):
