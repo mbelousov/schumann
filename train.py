@@ -75,9 +75,9 @@ def generateMelody(model, startSequence, addLength):
         lastElems = completeSequence[-length:]
         prediction = model.predict(np.array([lastElems]))
         melody = prediction.tolist()
+        print melody[0]
         completeSequence.append([int(round(m)) for m in melody[0]])
         # completeSequence.append(prediction[0].tolist())
-    return completeSequence
 
 # def generateMelody(model, startSequence, addLength):
 #     completeSequence = startSequence
@@ -191,21 +191,14 @@ if __name__ == '__main__':
     #         if int(round(note)) > 0:
     #             print "%.2f => %d" % (note, int(round(note)))
     # nMelody = [[int(round(note)) for note in state] for state in nMelody]
-    csv_output = []
     for i in xrange(len(nMelody)):
-        csv_row = []
         for j in xrange(len(nMelody[i])):
-            csv_row.append(float(nMelody[i][j]))
             signal = int(round(nMelody[i][j]))
             # print "%.5f => %d" % (nMelody[i][j], signal)
             if signal == 1:
                 nMelody[i][j] = [signal, 1]
             else:
                 nMelody[i][j] = [signal, 0]
-        csv_output.append(csv_row)
-    with open('output.csv', 'w') as f:
-        for row in csv_output:
-            f.write("\t".join([str(r) for r in row]) + "\n")
 
     m = MidiMatrix('output', lower_bound=collection.lower_bound,
                    upper_bound=collection.upper_bound,
