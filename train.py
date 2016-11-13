@@ -4,7 +4,7 @@ from keras.layers import LSTM, GRU
 from keras.optimizers import RMSprop, Adam
 import numpy as np
 from convert import LazyMidiCollection, DurationMidiMatrix, MidiMatrix
-
+import math
 
 class TrainData(object):
     x = []
@@ -75,8 +75,7 @@ def generateMelody(model, startSequence, addLength):
         lastElems = completeSequence[-length:]
         prediction = model.predict(np.array([lastElems]))
         melody = prediction.tolist()
-        # print melody[0]
-        completeSequence.append([1 if m > 0 else 0 for m in melody[0]])
+        completeSequence.append([int(math.ceil(m)) for m in melody[0]])
         # completeSequence.append(prediction[0].tolist())
 
 # def generateMelody(model, startSequence, addLength):
