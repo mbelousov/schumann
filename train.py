@@ -137,7 +137,7 @@ if __name__ == '__main__':
     # nMelody = [int(note) for state in nMelody for note in state]
     for state in nMelody[len(startSequence):]:
         for note in state:
-            if note > .4:
+            if int(round(note)) > 0:
                 print "%.2f => %d" % (note, int(round(note)))
     nMelody = [[int(round(note)) for note in state] for state in nMelody]
     m = DurationMidiMatrix('output', lower_bound=collection.lower_bound,
