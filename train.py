@@ -145,6 +145,9 @@ if __name__ == '__main__':
     optimizer = Adam()
     model.compile(loss='mse', optimizer=optimizer)
 
+    if weight_file != "":
+        model.load_weights('weights/' + weight_file)
+
     for epoch in xrange(nb_epochs):
         old_idx = 0
         for idx in pieces_idx:
@@ -153,11 +156,10 @@ if __name__ == '__main__':
                       shuffle=False,
                       verbose=2)
             old_idx = idx
+            model.reset_states()
         model.save_weights('weights/model_weights_%d.h5' % (epoch + 1))
         print "Saved epoch-%d" % (epoch + 1)
-    if weight_file != "":
-        model.load_weights('weights/' + weight_file)
-    else:
+    if nb_epochs > 0:
         model.save_weights('weights/model_weights.h5')
 
 
