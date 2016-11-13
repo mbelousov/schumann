@@ -163,7 +163,7 @@ if __name__ == '__main__':
         model.save_weights('weights/model_weights.h5')
 
 
-    melody = generateMelody(model, startSequence, 2 * start_sequence_length)
+    melody = generateMelody(model, startSequence, 5 * start_sequence_length)
     nMelody = [x[0] for x in melody]
     # nMelody = [int(note) for state in nMelody for note in state]
     # for state in nMelody[len(startSequence):]:
