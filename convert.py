@@ -393,6 +393,10 @@ class MIDIConverter(object):
                                 state[evt.pitch - self.lower_bound] = [1, 1]
                     elif isinstance(evt, midi.TimeSignatureEvent):
                         logging.info("TIME SIGN: %s" % evt)
+                        if evt.numerator not in (2, 4):
+                            # We don't want to worry about non-4 time signatures. Bail early!
+                            # print "Found time signature event {}. Bailing!".format(evt)
+                            return None
 
                     try:
                         timeleft[i] = track[pos + 1].tick

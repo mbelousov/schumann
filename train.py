@@ -92,6 +92,8 @@ if __name__ == '__main__':
     num_nodes = int(raw_input("Number of nodes: "))
     weight_file = raw_input("Weight file: ")
     nb_epochs = int(raw_input("Number of epochs: "))
+
+
     # batch_size = int(raw_input("Batch size: "))
     collection = LazyMidiCollection(collection_file)
     # context_length = collection.sample_rate * 4 * 2
@@ -157,7 +159,7 @@ if __name__ == '__main__':
                       verbose=2)
             old_idx = idx
             model.reset_states()
-        model.save_weights('weights/model_weights_%d.h5' % (epoch + 1))
+            model.save_weights('weights/model_weights_%d.h5' % (epoch + 1))
         print "Saved epoch-%d" % (epoch + 1)
     if nb_epochs > 0:
         model.save_weights('weights/model_weights.h5')
