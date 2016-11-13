@@ -6,6 +6,7 @@ import numpy as np
 from convert import LazyMidiCollection, DurationMidiMatrix, MidiMatrix
 import math
 
+
 class TrainData(object):
     x = []
     y = []
@@ -68,6 +69,7 @@ def unnormalise(x, upper):
         conv_x.append(result_state)
     return conv_x
 
+
 def generateMelody(model, startSequence, addLength):
     completeSequence = startSequence
     length = len(startSequence)
@@ -78,6 +80,7 @@ def generateMelody(model, startSequence, addLength):
         completeSequence.append([int(math.ceil(m)) for m in melody[0]])
         # completeSequence.append(prediction[0].tolist())
     return completeSequence
+
 
 # def generateMelody(model, startSequence, addLength):
 #     completeSequence = startSequence
@@ -103,7 +106,6 @@ if __name__ == '__main__':
     num_nodes = int(raw_input("Number of nodes: "))
     weight_file = raw_input("Weight file: ")
     nb_epochs = int(raw_input("Number of epochs: "))
-
 
     # batch_size = int(raw_input("Batch size: "))
     collection = LazyMidiCollection(collection_file)
@@ -181,8 +183,7 @@ if __name__ == '__main__':
     if nb_epochs > 0:
         model.save_weights('weights/model_weights.h5')
 
-
-    melody = generateMelody(model, startSequence, 5 * start_sequence_length)
+    melody = generateMelody(model, startSequence, 50 * start_sequence_length)
     nMelody = melody
     # nMelody = [x[0] for x in melody]
     # nMelody = [int(note) for state in nMelody for note in state]
