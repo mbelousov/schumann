@@ -1,26 +1,44 @@
 from keras.models import Sequential
 from keras.layers import Dense, Activation, Dropout
 from keras.layers import LSTM, GRU
-from keras.optimizers import RMSprop
+from keras.optimizers import RMSprop, Adam
 import numpy as np
-
-from convert import LazyMidiCollection, DurationMidiMatrix
+from convert import LazyMidiCollection, DurationMidiMatrix, MidiMatrix
 
 
 class TrainData(object):
     x = []
     y = []
 
-    def __init__(self, durationMatrix, context_length, step=1):
-        self.x = []
-        self.y = []
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+
+    @staticmethod
+    def from_duration_matrix(durationMatrix, context_length, step=1):
+        x = []
+        y = []
         for i in xrange(0, len(durationMatrix.duration_matrix) - context_length,
                         step):
             context = []
             for j in xrange(0, context_length):
                 context.append(durationMatrix.duration_matrix[i + j])
-            self.x.append(context)
-            self.y.append(durationMatrix.duration_matrix[i + context_length])
+            x.append(context)
+            y.append(durationMatrix.duration_matrix[i + context_length])
+        return TrainData(x, y)
+
+    @staticmethod
+    def from_midimatrix(midimatrix, context_length, step=1):
+        x = []
+        y = []
+        for i in xrange(0, len(midimatrix.statematrix) - context_length,
+                        step):
+            context = []
+            for j in xrange(0, context_length):
+                context.append([a[0] for a in midimatrix.statematrix[i + j]])
+            x.append(context)
+            y.append([a[0] for a in midimatrix.statematrix[i + context_length]])
+        return TrainData(x, y)
 
 
 def normalise(x, y):
@@ -83,22 +101,27 @@ if __name__ == '__main__':
     y = []
     pieces_idx = []
     for piece in collection.iterpieces():
-        durMat = DurationMidiMatrix.from_midimatrix(piece)
-        trainData = TrainData(durMat, context_length=context_length, step=1)
+        # durMat = DurationMidiMatrix.from_midimatrix(piece)
+        # trainData = TrainData(durMat, context_length=context_length, step=1)
+        trainData = TrainData.from_midimatrix(piece,
+                                              context_length=context_length,
+                                              step=1)
         X.extend(trainData.x)
         y.extend(trainData.y)
         pieces_idx.append(len(y))
     # X, y, norm_upper = normalise(X, y)
-
-    print np.array(X).shape
-    startSequence = X[:start_sequence_length]
-    print np.array(startSequence).shape
-    nStartSeq = [x[0] for x in startSequence]
-    m = DurationMidiMatrix('start', lower_bound=collection.lower_bound,
-                           upper_bound=collection.upper_bound,
-                           # duration_matrix=unnormalise(nStartSeq, norm_upper),
-                           duration_matrix=nStartSeq
-                           )
+    startSequence = list(X[:start_sequence_length])
+    nStartSeq = list([list(x[0]) for x in startSequence])
+    for i in xrange(len(nStartSeq)):
+        for j in xrange(len(nStartSeq[i])):
+            if nStartSeq[i][j] == 1:
+                nStartSeq[i][j] = [nStartSeq[i][j], 1]
+            else:
+                nStartSeq[i][j] = [nStartSeq[i][j], 0]
+    m = MidiMatrix('start', lower_bound=collection.lower_bound,
+                   upper_bound=collection.upper_bound,
+                   # duration_matrix=unnormalise(nStartSeq, norm_upper),
+                   statematrix=nStartSeq)
 
     m.to_midi('start.mid')
 
@@ -112,10 +135,11 @@ if __name__ == '__main__':
     model.add(GRU(num_nodes, batch_input_shape=(1, l_subsequence, n_notes),
                   stateful=True))
     model.add(Dense(n_notes))
-    # model.add(Activation('tanh'))
-    model.add(Activation('linear'))
+    model.add(Activation('relu'))
+    # model.add(Activation('linear'))
 
-    optimizer = RMSprop(lr=0.01)
+    # optimizer = RMSprop(lr=0.01)
+    optimizer = Adam()
     model.compile(loss='mse', optimizer=optimizer)
 
     # for i in range(100):
@@ -135,15 +159,23 @@ if __name__ == '__main__':
     melody = generateMelody(model, startSequence, 2 * start_sequence_length)
     nMelody = [x[0] for x in melody]
     # nMelody = [int(note) for state in nMelody for note in state]
-    for state in nMelody[len(startSequence):]:
-        for note in state:
-            if int(round(note)) > 0:
-                print "%.2f => %d" % (note, int(round(note)))
-    nMelody = [[int(round(note)) for note in state] for state in nMelody]
-    m = DurationMidiMatrix('output', lower_bound=collection.lower_bound,
-                           upper_bound=collection.upper_bound,
-                           # duration_matrix=unnormalise(nMelody, norm_upper),
-                           duration_matrix=nMelody
-                           )
+    # for state in nMelody[len(startSequence):]:
+    #     for note in state:
+    #         if int(round(note)) > 0:
+    #             print "%.2f => %d" % (note, int(round(note)))
+    # nMelody = [[int(round(note)) for note in state] for state in nMelody]
+    for i in xrange(len(nMelody)):
+        for j in xrange(len(nMelody[i])):
+            if nMelody[i][j] == 1:
+                nMelody[i][j] = [nMelody[i][j], 1]
+            else:
+                nMelody[i][j] = [nMelody[i][j], 0]
+
+    m = MidiMatrix('output', lower_bound=collection.lower_bound,
+                   upper_bound=collection.upper_bound,
+                   # duration_matrix=unnormalise(nMelody, norm_upper),
+                   # duration_matrix=nMelody
+                   statematrix=nMelody
+                   )
 
     m.to_midi('output.mid')
