@@ -88,7 +88,7 @@ if __name__ == '__main__':
         X.extend(trainData.x)
         y.extend(trainData.y)
         pieces_idx.append(len(y))
-    X, y, norm_upper = normalise(X, y)
+    # X, y, norm_upper = normalise(X, y)
 
     print np.array(X).shape
     startSequence = X[:start_sequence_length]
@@ -96,8 +96,9 @@ if __name__ == '__main__':
     nStartSeq = [x[0] for x in startSequence]
     m = DurationMidiMatrix('start', lower_bound=collection.lower_bound,
                            upper_bound=collection.upper_bound,
-                           duration_matrix=unnormalise(nStartSeq,
-                                                       norm_upper))
+                           # duration_matrix=unnormalise(nStartSeq, norm_upper),
+                           duration_matrix=nStartSeq
+                           )
 
     m.to_midi('start.mid')
 
@@ -111,7 +112,8 @@ if __name__ == '__main__':
     model.add(GRU(num_nodes, batch_input_shape=(1, l_subsequence, n_notes),
                   stateful=True))
     model.add(Dense(n_notes))
-    model.add(Activation('tanh'))
+    # model.add(Activation('tanh'))
+    model.add(Activation('linear'))
 
     optimizer = RMSprop(lr=0.01)
     model.compile(loss='mse', optimizer=optimizer)
@@ -132,8 +134,16 @@ if __name__ == '__main__':
 
     melody = generateMelody(model, startSequence, 2 * start_sequence_length)
     nMelody = [x[0] for x in melody]
+    # nMelody = [int(note) for state in nMelody for note in state]
+    for state in nMelody[len(startSequence):]:
+        for note in state:
+            if note > .5:
+                print "%.2f => %d" % (note, int(round(note)))
+    nMelody = [[int(round(note)) for note in state] for state in nMelody]
     m = DurationMidiMatrix('output', lower_bound=collection.lower_bound,
                            upper_bound=collection.upper_bound,
-                           duration_matrix=unnormalise(nMelody, norm_upper))
+                           # duration_matrix=unnormalise(nMelody, norm_upper),
+                           duration_matrix=nMelody
+                           )
 
     m.to_midi('output.mid')
