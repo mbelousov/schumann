@@ -195,7 +195,7 @@ if __name__ == '__main__':
     for i in xrange(len(nMelody)):
         csv_row = []
         for j in xrange(len(nMelody[i])):
-            csv_row.append(nMelody[i][j])
+            csv_row.append(float(nMelody[i][j]))
             signal = int(round(nMelody[i][j]))
             # print "%.5f => %d" % (nMelody[i][j], signal)
             if signal == 1:
