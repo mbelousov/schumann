@@ -98,14 +98,19 @@ def generateMelody(model, startSequence, addLength):
 
 
 if __name__ == '__main__':
-    default_collection_file = 'music_8_21-108.bin'
-    collection_file = raw_input(
-        "Collection file[%s]: " % default_collection_file)
-    if collection_file == "":
-        collection_file = default_collection_file
-    num_nodes = int(raw_input("Number of nodes: "))
-    weight_file = raw_input("Weight file: ")
-    nb_epochs = int(raw_input("Number of epochs: "))
+    # default_collection_file = 'music_4_24-102.bin'
+    # collection_file = raw_input(
+    #     "Collection file[%s]: " % default_collection_file)
+    # if collection_file == "":
+    #     collection_file = default_collection_file
+    # num_nodes = int(raw_input("Number of nodes: "))
+    # weight_file = raw_input("Weight file: ")
+    # nb_epochs = int(raw_input("Number of epochs: "))
+    collection_file = 'music_4_24-102.bin'
+    num_nodes = 50
+    weight_file = 'model_weights.h5'
+    nb_epochs = 0
+
 
     # batch_size = int(raw_input("Batch size: "))
     collection = LazyMidiCollection(collection_file)
