@@ -137,6 +137,11 @@ if __name__ == '__main__':
     for i in xrange(len(nStartSeq)):
         for j in xrange(len(nStartSeq[i])):
             if nStartSeq[i][j] == 1:
+                nStartSeq[i][j] = [1, 1]
+                if i - 1 >= 0:
+                    if nStartSeq[i - 1][j][0] == 1:
+                        nStartSeq[i][j] = [1, 0]
+
                 nStartSeq[i][j] = [nStartSeq[i][j], 1]
             else:
                 nStartSeq[i][j] = [nStartSeq[i][j], 0]
