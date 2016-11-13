@@ -10,7 +10,7 @@ import json
 if __name__ == '__main__':
     print "Reading.."
     x = []
-    collection = LazyMidiCollection('music_21-108.bin')
+    collection = LazyMidiCollection('music_8_21-108.bin')
     for midimatrix in collection.iterpieces():
         for state in midimatrix.statematrix:
             for j in xrange(len(state)):

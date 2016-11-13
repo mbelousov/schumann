@@ -87,9 +87,12 @@ if __name__ == '__main__':
         "Collection file[%s]: " % default_collection_file)
     if collection_file == "":
         collection_file = default_collection_file
-    nb_epochs = int(raw_input("Number of epochs: "))
-    # batch_size = int(raw_input("Batch size: "))
     num_nodes = int(raw_input("Number of nodes: "))
+    weight_file = raw_input("Weight file: ")
+    nb_epochs = 0
+    if weight_file == "":
+        nb_epochs = int(raw_input("Number of epochs: "))
+    # batch_size = int(raw_input("Batch size: "))
     collection = LazyMidiCollection(collection_file)
     # context_length = collection.sample_rate * 4 * 2
     start_sequence_length = collection.sample_rate * 4 * 2
@@ -142,8 +145,6 @@ if __name__ == '__main__':
     optimizer = Adam()
     model.compile(loss='mse', optimizer=optimizer)
 
-    # for i in range(100):
-    #
     for epoch in xrange(nb_epochs):
         old_idx = 0
         for idx in pieces_idx:
@@ -153,8 +154,12 @@ if __name__ == '__main__':
                       verbose=2)
             old_idx = idx
         model.save_weights('weights/model_weights_%d.h5' % (epoch + 1))
+        print "Saved epoch-%d" % (epoch + 1)
+    if weight_file != "":
+        model.load_weights('weights/' + weight_file)
+    else:
+        model.save_weights('weights/model_weights.h5')
 
-    model.save_weights('weights/model_weights.h5')
 
     melody = generateMelody(model, startSequence, 2 * start_sequence_length)
     nMelody = [x[0] for x in melody]
@@ -164,14 +169,21 @@ if __name__ == '__main__':
     #         if int(round(note)) > 0:
     #             print "%.2f => %d" % (note, int(round(note)))
     # nMelody = [[int(round(note)) for note in state] for state in nMelody]
+    csv_output = []
     for i in xrange(len(nMelody)):
+        csv_row = []
         for j in xrange(len(nMelody[i])):
+            csv_row.append(nMelody[i][j])
             signal = int(round(nMelody[i][j]))
             # print "%.5f => %d" % (nMelody[i][j], signal)
             if signal == 1:
                 nMelody[i][j] = [signal, 1]
             else:
                 nMelody[i][j] = [signal, 0]
+        csv_output.append(csv_row)
+    with open('output.csv', 'w') as f:
+        for row in csv_output:
+            f.write("\t".join([str(r) for r in row]) + "\n")
 
     m = MidiMatrix('output', lower_bound=collection.lower_bound,
                    upper_bound=collection.upper_bound,
@@ -181,3 +193,4 @@ if __name__ == '__main__':
                    )
 
     m.to_midi('output.mid')
+    print "Done."
