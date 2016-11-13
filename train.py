@@ -166,10 +166,12 @@ if __name__ == '__main__':
     # nMelody = [[int(round(note)) for note in state] for state in nMelody]
     for i in xrange(len(nMelody)):
         for j in xrange(len(nMelody[i])):
-            if nMelody[i][j] == 1:
-                nMelody[i][j] = [nMelody[i][j], 1]
+            signal = int(round(nMelody[i][j]))
+            # print "%.5f => %d" % (nMelody[i][j], signal)
+            if signal == 1:
+                nMelody[i][j] = [signal, 1]
             else:
-                nMelody[i][j] = [nMelody[i][j], 0]
+                nMelody[i][j] = [signal, 0]
 
     m = MidiMatrix('output', lower_bound=collection.lower_bound,
                    upper_bound=collection.upper_bound,
