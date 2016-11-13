@@ -68,19 +68,28 @@ def unnormalise(x, upper):
         conv_x.append(result_state)
     return conv_x
 
-
 def generateMelody(model, startSequence, addLength):
     completeSequence = startSequence
-    for n in range(len(startSequence)):
-        model.predict(np.array([startSequence[n]]))
-
+    length = len(startSequence)
     for n in range(addLength):
-        lastElems = completeSequence[-1]
+        lastElems = completeSequence[-length:]
         prediction = model.predict(np.array([lastElems]))
-        completeSequence.append(prediction.tolist())
-        # melody = prediction.tolist()
-        # completeSequence.append([[int(round(m)) for m in melody[0]]])
+        completeSequence.append(prediction[0].tolist())
     return completeSequence
+
+# def generateMelody(model, startSequence, addLength):
+#     completeSequence = startSequence
+#     for n in range(len(startSequence)):
+#         model.predict(np.array([startSequence[n]]))
+#
+#     for n in range(addLength):
+#         lastElems = completeSequence[-1]
+#         prediction = model.predict(np.array([lastElems]))
+#         completeSequence.append(prediction.tolist())
+#         # melody = prediction.tolist()
+#         # completeSequence.append([[int(round(m)) for m in melody[0]]])
+#     return completeSequence
+
 
 
 if __name__ == '__main__':
@@ -98,8 +107,10 @@ if __name__ == '__main__':
     collection = LazyMidiCollection(collection_file)
     # context_length = collection.sample_rate * 4 * 2
     start_sequence_length = collection.sample_rate * 4 * 2
-    context_length = 1
-    batch_size = 1
+    context_length = collection.sample_rate * 4 * 2
+
+    # context_length = 1
+    batch_size = 10
     # print "Context: %d" % context_length
 
     X = []
@@ -115,8 +126,10 @@ if __name__ == '__main__':
         y.extend(trainData.y)
         pieces_idx.append(len(y))
     # X, y, norm_upper = normalise(X, y)
-    startSequence = list(X[:start_sequence_length])
-    nStartSeq = list([list(x[0]) for x in startSequence])
+    # startSequence = list(X[:start_sequence_length])
+    startSequence = X[0]
+    nStartSeq = [list(state) for state in startSequence]
+    # nStartSeq = list([list(x[0]) for x in startSequence])
     for i in xrange(len(nStartSeq)):
         for j in xrange(len(nStartSeq[i])):
             if nStartSeq[i][j] == 1:
@@ -127,7 +140,7 @@ if __name__ == '__main__':
                    upper_bound=collection.upper_bound,
                    # duration_matrix=unnormalise(nStartSeq, norm_upper),
                    statematrix=nStartSeq)
-
+    #
     m.to_midi('start.mid')
 
     n_notes = collection.upper_bound - collection.lower_bound + 1
@@ -137,8 +150,9 @@ if __name__ == '__main__':
     print("Num examples: %d" % n_examples)
     print('Build model...')
     model = Sequential()
-    model.add(GRU(num_nodes, batch_input_shape=(1, l_subsequence, n_notes),
-                  stateful=True))
+    # model.add(GRU(num_nodes, batch_input_shape=(1, l_subsequence, n_notes),
+    #               stateful=True))
+    model.add(GRU(num_nodes, input_shape=input_shape))
     model.add(Dense(n_notes))
     model.add(Activation('relu'))
     # model.add(Activation('linear'))
@@ -150,23 +164,24 @@ if __name__ == '__main__':
     if weight_file != "":
         model.load_weights('weights/' + weight_file)
 
-    for epoch in xrange(nb_epochs):
-        old_idx = 0
-        for idx in pieces_idx:
-            model.fit(X[old_idx:idx], y[old_idx:idx], batch_size=batch_size,
-                      nb_epoch=1,
-                      shuffle=False,
-                      verbose=2)
-            old_idx = idx
-            model.reset_states()
-            model.save_weights('weights/model_weights_%d.h5' % (epoch + 1))
-        print "Saved epoch-%d" % (epoch + 1)
+    # for epoch in xrange(nb_epochs):
+    #     old_idx = 0
+    #     for idx in pieces_idx:
+    #         model.fit(X[old_idx:idx], y[old_idx:idx], batch_size=batch_size,
+    #                   nb_epoch=1,
+    #                   verbose=2)
+    #         old_idx = idx
+    #         model.reset_states()
+    #         model.save_weights('weights/model_weights_%d.h5' % (epoch + 1))
+    #     print "Saved epoch-%d" % (epoch + 1)
+    model.fit(X, y, batch_size=batch_size, nb_epoch=nb_epochs, verbose=2)
     if nb_epochs > 0:
         model.save_weights('weights/model_weights.h5')
 
 
     melody = generateMelody(model, startSequence, 5 * start_sequence_length)
-    nMelody = [x[0] for x in melody]
+    nMelody = melody
+    # nMelody = [x[0] for x in melody]
     # nMelody = [int(note) for state in nMelody for note in state]
     # for state in nMelody[len(startSequence):]:
     #     for note in state:
