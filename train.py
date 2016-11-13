@@ -155,6 +155,7 @@ if __name__ == '__main__':
     # model.add(GRU(num_nodes, batch_input_shape=(1, l_subsequence, n_notes),
     #               stateful=True))
     model.add(GRU(num_nodes, input_shape=input_shape))
+    model.add(Dropout(0.2))
     model.add(Dense(n_notes))
     model.add(Activation('relu'))
     # model.add(Activation('linear'))
