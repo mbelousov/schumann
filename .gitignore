@@ -6,6 +6,7 @@ music-db/
 output/
 start.mid
 output.mid
+output.csv
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
