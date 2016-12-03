@@ -79,7 +79,7 @@ def generateMelody(model, startSequence, addLength):
         melody = prediction.tolist()
         arr = []
         for m in melody[0]:
-            if(m>0.3):
+            if(m>0.15):
                 arr.append(1)
             else:
                 arr.append(0)
